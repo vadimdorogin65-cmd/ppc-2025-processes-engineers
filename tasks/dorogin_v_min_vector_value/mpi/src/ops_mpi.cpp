@@ -2,11 +2,9 @@
 
 #include <mpi.h>
 
-#include <numeric>
-#include <vector>
+#include <algorithm>
 
 #include "dorogin_v_min_vector_value/common/include/common.hpp"
-#include "util/include/util.hpp"
 
 namespace dorogin_v_min_vector_value {
 
@@ -17,56 +15,34 @@ DoroginVMinVectorValueMPI::DoroginVMinVectorValueMPI(const InType &in) {
 }
 
 bool DoroginVMinVectorValueMPI::ValidationImpl() {
-  return (GetInput() > 0) && (GetOutput() == 0);
+  return !GetInput().empty();
 }
 
 bool DoroginVMinVectorValueMPI::PreProcessingImpl() {
-  GetOutput() = 2 * GetInput();
-  return GetOutput() > 0;
+  return true;
 }
 
 bool DoroginVMinVectorValueMPI::RunImpl() {
-  auto input = GetInput();
-  if (input == 0) {
-    return false;
-  }
-
-  for (InType i = 0; i < GetInput(); i++) {
-    for (InType j = 0; j < GetInput(); j++) {
-      for (InType k = 0; k < GetInput(); k++) {
-        std::vector<InType> tmp(i + j + k, 1);
-        GetOutput() += std::accumulate(tmp.begin(), tmp.end(), 0);
-        GetOutput() -= i + j + k;
-      }
-    }
-  }
-
-  const int num_threads = ppc::util::GetNumThreads();
-  GetOutput() *= num_threads;
-
   int rank = 0;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-  if (rank == 0) {
-    GetOutput() /= num_threads;
-  } else {
-    int counter = 0;
-    for (int i = 0; i < num_threads; i++) {
-      counter++;
-    }
+  int global_min = 0;
 
-    if (counter != 0) {
-      GetOutput() /= counter;
-    }
+  if (rank == 0) {
+    const auto &data = GetInput();
+
+    const auto it_min = std::min_element(data.begin(), data.end());
+    global_min = (it_min != data.end()) ? *it_min : 0;
   }
 
-  MPI_Barrier(MPI_COMM_WORLD);
-  return GetOutput() > 0;
+  MPI_Bcast(&global_min, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+  GetOutput() = global_min;
+  return true;
 }
 
 bool DoroginVMinVectorValueMPI::PostProcessingImpl() {
-  GetOutput() -= GetInput();
-  return GetOutput() > 0;
+  return true;
 }
 
 }  // namespace dorogin_v_min_vector_value

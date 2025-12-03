@@ -1,10 +1,8 @@
 #include "dorogin_v_min_vector_value/seq/include/ops_seq.hpp"
 
-#include <numeric>
-#include <vector>
+#include <algorithm>
 
 #include "dorogin_v_min_vector_value/common/include/common.hpp"
-#include "util/include/util.hpp"
 
 namespace dorogin_v_min_vector_value {
 
@@ -15,46 +13,25 @@ DoroginVMinVectorValueSEQ::DoroginVMinVectorValueSEQ(const InType &in) {
 }
 
 bool DoroginVMinVectorValueSEQ::ValidationImpl() {
-  return (GetInput() > 0) && (GetOutput() == 0);
+  return !GetInput().empty();
 }
 
 bool DoroginVMinVectorValueSEQ::PreProcessingImpl() {
-  GetOutput() = 2 * GetInput();
-  return GetOutput() > 0;
+  return true;
 }
 
 bool DoroginVMinVectorValueSEQ::RunImpl() {
-  if (GetInput() == 0) {
-    return false;
-  }
+  const auto &data = GetInput();
 
-  for (InType i = 0; i < GetInput(); i++) {
-    for (InType j = 0; j < GetInput(); j++) {
-      for (InType k = 0; k < GetInput(); k++) {
-        std::vector<InType> tmp(i + j + k, 1);
-        GetOutput() += std::accumulate(tmp.begin(), tmp.end(), 0);
-        GetOutput() -= i + j + k;
-      }
-    }
-  }
+  const auto it_min = std::min_element(data.begin(), data.end());
 
-  const int num_threads = ppc::util::GetNumThreads();
-  GetOutput() *= num_threads;
+  GetOutput() = (it_min != data.end()) ? *it_min : 0;
 
-  int counter = 0;
-  for (int i = 0; i < num_threads; i++) {
-    counter++;
-  }
-
-  if (counter != 0) {
-    GetOutput() /= counter;
-  }
-  return GetOutput() > 0;
+  return true;
 }
 
 bool DoroginVMinVectorValueSEQ::PostProcessingImpl() {
-  GetOutput() -= GetInput();
-  return GetOutput() > 0;
+  return true;
 }
 
 }  // namespace dorogin_v_min_vector_value

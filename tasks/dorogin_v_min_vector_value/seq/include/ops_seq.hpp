@@ -2,6 +2,7 @@
 
 #include "dorogin_v_min_vector_value/common/include/common.hpp"
 #include "task/include/task.hpp"
+#include <vector>
 
 namespace dorogin_v_min_vector_value {
 
@@ -19,4 +20,4 @@ class DoroginVMinVectorValueSEQ : public BaseTask {
   bool PostProcessingImpl() override;
 };
 
-}  // namespace dorogin_v_min_vector_value
+} // namespace dorogin_v_min_vector_value
