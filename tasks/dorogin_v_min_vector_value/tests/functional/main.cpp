@@ -4,6 +4,7 @@
 #include <array>
 #include <cstddef>
 #include <limits>
+// NOLINTNEXTLINE(misc-include-cleaner) - required for std::ranges::min_element
 #include <ranges>
 #include <stdexcept>
 #include <string>
