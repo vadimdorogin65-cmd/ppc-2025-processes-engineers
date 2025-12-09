@@ -16,7 +16,7 @@ class DoroginVMinVectorValueRunPerfTests : public ppc::util::BaseRunPerfTests<In
 
  protected:
   void SetUp() override {
-    std::mt19937 gen(123456u);
+    std::mt19937 gen(123456U);
     std::uniform_int_distribution<int> dist(-1000, 1000);
 
     input_vec_.resize(kSize);
