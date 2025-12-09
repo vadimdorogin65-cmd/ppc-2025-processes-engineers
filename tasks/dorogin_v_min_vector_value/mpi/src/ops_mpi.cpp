@@ -3,6 +3,7 @@
 #include <mpi.h>
 
 #include <algorithm>
+#include <ranges>
 
 #include "dorogin_v_min_vector_value/common/include/common.hpp"
 
@@ -31,7 +32,7 @@ bool DoroginVMinVectorValueMPI::RunImpl() {
   if (rank == 0) {
     const auto &data = GetInput();
 
-    const auto it_min = std::min_element(data.begin(), data.end());
+    const auto it_min = std::ranges::min_element(data);
     global_min = (it_min != data.end()) ? *it_min : 0;
   }
 

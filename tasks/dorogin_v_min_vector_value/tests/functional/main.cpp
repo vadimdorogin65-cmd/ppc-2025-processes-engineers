@@ -1,8 +1,10 @@
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <limits>
+#include <ranges>
 #include <string>
 #include <tuple>
 #include <vector>
@@ -28,7 +30,7 @@ class DoroginVMinVectorValueFuncTests : public ppc::util::BaseRunFuncTests<InTyp
   }
 
   bool CheckTestOutputData(OutType &output_data) final {
-    const auto it = std::min_element(test_vector_.begin(), test_vector_.end());
+    const auto it = std::ranges::min_element(test_vector_);
     const int expected = (it != test_vector_.end()) ? *it : 0;
     return output_data == expected;
   }
