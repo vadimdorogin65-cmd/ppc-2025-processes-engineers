@@ -3,7 +3,7 @@
 #include <mpi.h>
 
 #include <algorithm>
-#include <ranges>  // NOLINT(misc-include-cleaner) - required for std::ranges::min_element
+#include <ranges>
 
 #include "dorogin_v_min_vector_value/common/include/common.hpp"
 
