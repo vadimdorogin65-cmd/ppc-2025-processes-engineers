@@ -54,4 +54,4 @@ const auto kPerfTestName = DoroginVMinVectorValueRunPerfTests::CustomPerfTestNam
 
 INSTANTIATE_TEST_SUITE_P(RunModeTests, DoroginVMinVectorValueRunPerfTests, kGtestValues, kPerfTestName);
 
-} // namespace dorogin_v_min_vector_value
+}  // namespace dorogin_v_min_vector_value
