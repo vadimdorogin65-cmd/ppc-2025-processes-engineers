@@ -4,7 +4,6 @@
 
 #include <algorithm>
 #include <limits>
-#include <ranges>
 #include <vector>
 
 #include "dorogin_v_min_vector_value/common/include/common.hpp"
