@@ -16,7 +16,6 @@ class DoroginVMinVectorValueRunPerfTests : public ppc::util::BaseRunPerfTests<In
 
  protected:
   void SetUp() override {
-    // NOLINTNEXTLINE(cert-msc51-cpp) - fixed seed for reproducible tests
     std::mt19937 gen(123456U);
     std::uniform_int_distribution<int> dist(-1000, 1000);
 
