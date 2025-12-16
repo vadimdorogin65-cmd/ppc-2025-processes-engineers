@@ -10,8 +10,7 @@
 
 namespace dorogin_v_min_vector_value {
 
-class DoroginVMinVectorValueRunPerfTests
-    : public ppc::util::BaseRunPerfTests<InType, OutType> {
+class DoroginVMinVectorValueRunPerfTests : public ppc::util::BaseRunPerfTests<InType, OutType> {
  public:
   static constexpr size_t kSize = 50000000;
 
@@ -47,23 +46,13 @@ TEST_P(DoroginVMinVectorValueRunPerfTests, RunPerfModes) {
   ExecuteTest(GetParam());
 }
 
-const auto kAllPerfTasks =
-    ppc::util::MakeAllPerfTasks<
-        InType,
-        DoroginVMinVectorValueMPI,
-        DoroginVMinVectorValueSEQ>(
-        PPC_SETTINGS_dorogin_v_min_vector_value);
+const auto kAllPerfTasks = ppc::util::MakeAllPerfTasks<InType, DoroginVMinVectorValueMPI, DoroginVMinVectorValueSEQ>(
+    PPC_SETTINGS_dorogin_v_min_vector_value);
 
-const auto kGtestValues =
-    ppc::util::TupleToGTestValues(kAllPerfTasks);
+const auto kGtestValues = ppc::util::TupleToGTestValues(kAllPerfTasks);
 
-const auto kPerfTestName =
-    DoroginVMinVectorValueRunPerfTests::CustomPerfTestName;
+const auto kPerfTestName = DoroginVMinVectorValueRunPerfTests::CustomPerfTestName;
 
-INSTANTIATE_TEST_SUITE_P(
-    RunModeTests,
-    DoroginVMinVectorValueRunPerfTests,
-    kGtestValues,
-    kPerfTestName);
+INSTANTIATE_TEST_SUITE_P(RunModeTests, DoroginVMinVectorValueRunPerfTests, kGtestValues, kPerfTestName);
 
 }  // namespace dorogin_v_min_vector_value
