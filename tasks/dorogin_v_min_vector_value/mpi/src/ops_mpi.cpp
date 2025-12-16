@@ -30,53 +30,48 @@ bool DoroginVMinVectorValueMPI::RunImpl() {
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-  int global_size = 0;
-  if (rank == 0) {
-    global_size = static_cast<int>(GetInput().size());
-  }
+  const auto &data = GetInput();
+  const int data_size = static_cast<int>(data.size());
 
-  MPI_Bcast(&global_size, 1, MPI_INT, 0, MPI_COMM_WORLD);
+  // Calculate chunk size for each process
+  const int chunk_size = data_size / size;
+  const int remainder = data_size % size;
+  const int local_size = chunk_size + (rank < remainder ? 1 : 0);
 
-  if (global_size == 0) {
-    if (rank == 0) {
-      GetOutput() = 0;
-    }
-    return true;
-  }
-
-  const int base_block = global_size / size;
-  const int remainder = global_size % size;
-
-  const int local_size = base_block + (rank < remainder ? 1 : 0);
-
-  std::vector<int> sendcounts(size);
-  std::vector<int> displs(size);
-
-  if (rank == 0) {
-    int offset = 0;
-    for (int proc_idx = 0; proc_idx < size; ++proc_idx) {
-      const int cnt = base_block + (proc_idx < remainder ? 1 : 0);
-      sendcounts[proc_idx] = cnt;
-      displs[proc_idx] = offset;
-      offset += cnt;
-    }
-  }
-
-  MPI_Bcast(sendcounts.data(), size, MPI_INT, 0, MPI_COMM_WORLD);
-  MPI_Bcast(displs.data(), size, MPI_INT, 0, MPI_COMM_WORLD);
-
+  // Distribute data: rank 0 sends chunks to other ranks
   std::vector<int> local_data(local_size);
-
-  MPI_Scatterv(rank == 0 ? GetInput().data() : nullptr, sendcounts.data(), displs.data(), MPI_INT, local_data.data(),
-               local_size, MPI_INT, 0, MPI_COMM_WORLD);
-
-  int local_min = std::numeric_limits<int>::max();
-  for (int v : local_data) {
-    local_min = std::min(local_min, v);
+  if (rank == 0) {
+    // Rank 0 keeps its chunk
+    for (int i = 0; i < local_size; ++i) {
+      local_data[i] = data[i];
+    }
+    // Send chunks to other ranks
+    int offset = local_size;
+    for (int dest = 1; dest < size; ++dest) {
+      const int dest_size = chunk_size + (dest < remainder ? 1 : 0);
+      MPI_Send(data.data() + offset, dest_size, MPI_INT, dest, 0, MPI_COMM_WORLD);
+      offset += dest_size;
+    }
+  } else {
+    // Other ranks receive their chunk
+    MPI_Recv(local_data.data(), local_size, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
   }
 
+  // Find local minimum
+  int local_min = 0;
+  if (local_size > 0) {
+    const auto it_min = std::ranges::min_element(local_data);
+    local_min = (it_min != local_data.end()) ? *it_min : 0;
+  } else {
+    local_min = std::numeric_limits<int>::max();
+  }
+
+  // Reduce to find global minimum
   int global_min = 0;
-  MPI_Allreduce(&local_min, &global_min, 1, MPI_INT, MPI_MIN, MPI_COMM_WORLD);
+  MPI_Reduce(&local_min, &global_min, 1, MPI_INT, MPI_MIN, 0, MPI_COMM_WORLD);
+
+  // Broadcast result to all ranks
+  MPI_Bcast(&global_min, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
   GetOutput() = global_min;
   return true;

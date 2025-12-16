@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include <ranges>
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <stdexcept>

@@ -1,6 +1,6 @@
 #include "dorogin_v_min_vector_value/seq/include/ops_seq.hpp"
 
-#include <ranges>
+#include <algorithm>
 
 #include "dorogin_v_min_vector_value/common/include/common.hpp"
 
@@ -24,6 +24,7 @@ bool DoroginVMinVectorValueSEQ::RunImpl() {
   const auto &data = GetInput();
 
   const auto it_min = std::ranges::min_element(data);
+
   GetOutput() = (it_min != data.end()) ? *it_min : 0;
 
   return true;
