@@ -23,7 +23,7 @@ bool DoroginVMinVectorValueSEQ::PreProcessingImpl() {
 bool DoroginVMinVectorValueSEQ::RunImpl() {
   const auto &data = GetInput();
 
-  const auto it_min = std::ranges::min_element(data);
+  const auto it_min = std::min_element(data.begin(), data.end());
 
   GetOutput() = (it_min != data.end()) ? *it_min : 0;
 

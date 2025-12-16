@@ -29,7 +29,7 @@ class DoroginVMinVectorValueFuncTests : public ppc::util::BaseRunFuncTests<InTyp
   }
 
   bool CheckTestOutputData(OutType &output_data) final {
-    const auto it = std::ranges::min_element(test_vector_);
+    const auto it = std::min_element(test_vector_.begin(), test_vector_.end());
     const int expected = (it != test_vector_.end()) ? *it : 0;
     return output_data == expected;
   }
