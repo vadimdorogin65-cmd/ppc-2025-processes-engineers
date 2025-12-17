@@ -126,5 +126,5 @@ TEST(DoroginVMinVectorValueValidation, SeqEmptyVectorValidationFails) {
   EXPECT_FALSE(task.Validation());
 }
 
-} 
+}  // namespace
 }  // namespace dorogin_v_min_vector_value
