@@ -118,15 +118,13 @@ TEST(DoroginVMinVectorValueValidation, MpiEmptyVectorValidationFails) {
   InType vec = {};
   DoroginVMinVectorValueMPI task(vec);
   EXPECT_FALSE(task.Validation());
-  EXPECT_THROW(task.Validation(), std::runtime_error);
 }
 
 TEST(DoroginVMinVectorValueValidation, SeqEmptyVectorValidationFails) {
   InType vec = {};
   DoroginVMinVectorValueSEQ task(vec);
   EXPECT_FALSE(task.Validation());
-  EXPECT_THROW(task.Validation(), std::runtime_error);
 }
 
-}  // namespace
+} 
 }  // namespace dorogin_v_min_vector_value
