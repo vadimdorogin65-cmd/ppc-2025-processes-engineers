@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <mpi.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -11,8 +12,7 @@
 
 namespace dorogin_v_contrasts_raising {
 
-class DoroginVRunPerfTests
-    : public ppc::util::BaseRunPerfTests<InType, OutType> {
+class DoroginVRunPerfTests : public ppc::util::BaseRunPerfTests<InType, OutType> {
  protected:
   void SetUp() override {
     constexpr size_t kSize = 1'000'000;
@@ -22,13 +22,10 @@ class DoroginVRunPerfTests
     constexpr float kFactor = 1.3F;
 
     std::transform(input_.begin(), input_.end(), expected_.begin(),
-                   [](uint8_t v) {
-                     return static_cast<uint8_t>(
-                         std::clamp(int(v * kFactor), 0, 255));
-                   });
+                   [](uint8_t v) { return static_cast<uint8_t>(std::clamp(int(v * kFactor), 0, 255)); });
   }
 
-  bool CheckTestOutputData(OutType& out) final {
+  bool CheckTestOutputData(OutType &out) final {
     int rank = 0;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
@@ -36,8 +33,7 @@ class DoroginVRunPerfTests
       return true;
     }
 
-    return out.size() == expected_.size() &&
-           std::equal(out.begin(), out.end(), expected_.begin());
+    return out.size() == expected_.size() && std::equal(out.begin(), out.end(), expected_.begin());
   }
 
   InType GetTestInputData() final {
@@ -54,22 +50,13 @@ TEST_P(DoroginVRunPerfTests, RunPerfModes) {
 }
 
 const auto kAllPerfTasks =
-    ppc::util::MakeAllPerfTasks<
-        InType,
-        DoroginVContrastsRaisingMPI,
-        DoroginVContrastsRaisingSEQ>(
+    ppc::util::MakeAllPerfTasks<InType, DoroginVContrastsRaisingMPI, DoroginVContrastsRaisingSEQ>(
         PPC_SETTINGS_dorogin_v_contrasts_raising);
 
-const auto kGtestValues =
-    ppc::util::TupleToGTestValues(kAllPerfTasks);
+const auto kGtestValues = ppc::util::TupleToGTestValues(kAllPerfTasks);
 
-const auto kPerfTestName =
-    DoroginVRunPerfTests::CustomPerfTestName;
+const auto kPerfTestName = DoroginVRunPerfTests::CustomPerfTestName;
 
-INSTANTIATE_TEST_SUITE_P(
-    RunModeTests,
-    DoroginVRunPerfTests,
-    kGtestValues,
-    kPerfTestName);
+INSTANTIATE_TEST_SUITE_P(RunModeTests, DoroginVRunPerfTests, kGtestValues, kPerfTestName);
 
 }  // namespace dorogin_v_contrasts_raising
