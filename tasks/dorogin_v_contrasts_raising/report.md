@@ -16,8 +16,8 @@ y_i = clamp(⌊x_i · k⌋, 0, 255),   i = 0, …, N-1
 k = 1.3 это коэффициент усиления контраста, а clamp ограничивает значение снизу 0 и сверху 255.
 
 Входные данные:
--одномерный массив (вектор) яркостей пикселей `InType`
-- в функциональных тестах в качестве входа используется изображение `pic.jpg`, загружаемое через `stb_image` и разворачиваемое в одномерный массив.
+- одномерный массив (вектор) яркостей пикселей `InType` (в реализации — `std::vector<uint8_t>`).
+- в функциональных тестах в качестве входа используется генерируемый тестовый вектор размера 256 элементов со значениями от 0 до 255.
 
 Выходные данные:
 - вектор `OutType` (также `std::vector<uint8_t>`), который содержит новое изображение с повышенным контрастом.
@@ -35,12 +35,12 @@ k = 1.3 это коэффициент усиления контраста, а cl
 Основной цикл выглядит как линейный проход по массиву:
 
 ```cpp
-const auto& src = GetInput();
-auto& dst = GetOutput();
+const auto &src = GetInput();
+auto &dst = GetOutput();
 
 for (size_t i = 0; i < src.size(); ++i) {
-  const int adjusted =
-      static_cast<int>(static_cast<float>(src[i]) * kContrastFactor);
+  const float scaled = static_cast<float>(src[i]) * kContrastFactor;
+  const int adjusted = static_cast<int>(scaled);
   dst[i] = static_cast<uint8_t>(std::clamp(adjusted, 0, 255));
 }
 ```
@@ -105,52 +105,66 @@ MPI_Gatherv(local_output.data(), counts[rank], MPI_UNSIGNED_CHAR,
 - `mpi/src/ops_mpi.cpp` — реализация параллельной версии (распределение данных, вызовы MPI, локальная обработка).
 - `seq/include/ops_seq.hpp` — объявление класса `DoroginVContrastsRaisingSEQ`.
 - `seq/src/ops_seq.cpp` — реализация последовательной версии.
-- `tests/functional/main.cpp` — функциональные тесты (сравнение с эталоном для реального изображения `pic.jpg`).
+- `tests/functional/main.cpp` — функциональные тесты (сравнение с эталоном для тестового вектора).
 - `tests/performance/main.cpp` — тесты на производительность (генерация случайного вектора яркостей и сравнение скорости seq/MPI).
 
 ### Функциональные тесты
 
-Функциональные тесты построены на базе `ppc::util::BaseRunFuncTests`, а так же используют реальное изображение.
+Функциональные тесты построены на базе `ppc::util::BaseRunFuncTests`.
 
-1. На процессе rank 0 загружается изображение `pic.jpg` с помощью `stbi_load`:
-
-```cpp
-const std::string img_path =
-    ppc::util::GetAbsoluteTaskPath(PPC_ID_dorogin_v_contrasts_raising, "pic.jpg");
-
-uint8_t* data = stbi_load(img_path.c_str(), &w, &h, &c, STBI_rgb);
-```
-
-2. Изображение разворачивается в одномерный массив `input_` длины `w * h * STBI_rgb`.
-3. Вектор `input_` широковещательно рассылается каждому процессу через `MPI_Bcast`, чтобы каждая реализация задачи seq и mpi имела один и тот же вход.
-4. Эталонный результат `expected_` считается локально по той же формуле усиления контраста:
+1. В методе `SetUp()` генерируется тестовый входной вектор `input_` размера 256 элементов, заполненный значениями от 0 до 255:
 
 ```cpp
-std::transform(input_.begin(), input_.end(), expected_.begin(),
-               [](uint8_t v) {
-                 return static_cast<uint8_t>(
-                     std::clamp(static_cast<int>(v * kFactor), 0, 255));
-               });
-```
+constexpr size_t kSize = 256;
+input_.resize(kSize);
 
-5. Метод `CheckTestOutputData` сравнивает выходной вектор с эталоном только на rank 0. Для остальных процессов тест возвращает `true`, так как их вывод не используется напрямую:
-
-```cpp
-if (rank != 0) {
-  return true;
+for (size_t i = 0; i < kSize; ++i) {
+  input_[i] = static_cast<uint8_t>(i);
 }
+```
+
+2. Эталонный результат `expected_` вычисляется по той же формуле усиления контраста с использованием `std::ranges::transform`:
+
+```cpp
+constexpr float kFactor = 1.3F;
+std::ranges::transform(input_, expected_.begin(), [](uint8_t v) {
+  const float scaled = static_cast<float>(v) * kFactor;
+  const int adjusted = static_cast<int>(scaled);
+  return static_cast<uint8_t>(std::clamp(adjusted, 0, 255));
+});
+```
+
+3. Метод `CheckTestOutputData` сравнивает выходной вектор с эталоном по размеру и по элементам:
+
+```cpp
 return out.size() == expected_.size() &&
        std::equal(out.begin(), out.end(), expected_.begin());
 ```
 
-Параметризация тестов `kParams` задаёт разные режимы запуска через настройки `PPC_SETTINGS_dorogin_v_contrasts_raising`.
+Параметризация тестов `kParams` задаёт разные режимы запуска (small, medium, large) через настройки `PPC_SETTINGS_dorogin_v_contrasts_raising`. Тесты проверяют только последовательную реализацию (`DoroginVContrastsRaisingSEQ`).
 
 ### Тесты производительности
 
 Тесты производительности реализованы на базе `ppc::util::BaseRunPerfTests`. В них:
 
-вектор input генерируется и имеет фиксированный размер, к примеру 1000000 элементов, со значениями яркостей в диапозоне от 0 до 255
-Эталон expected вычисляется по такой же формуле повышения контраста с коэффициентом kFactor равным 1.3F. Для каждого режима seq,mpi выполняется несколько прогонов, а утилиты курса измеряют и усредняют время выполнения.
+1. Вектор input генерируется с фиксированным размером 1 000 000 элементов, заполненный значением 120:
+
+```cpp
+constexpr size_t kSize = 1'000'000;
+input_.assign(kSize, 120);
+```
+
+2. Эталон `expected_` вычисляется по той же формуле повышения контраста с коэффициентом `kFactor = 1.3F`:
+
+```cpp
+std::ranges::transform(input_, expected_.begin(), [](uint8_t v) {
+  const float scaled = static_cast<float>(v) * kFactor;
+  const int adjusted = static_cast<int>(scaled);
+  return static_cast<uint8_t>(std::clamp(adjusted, 0, 255));
+});
+```
+
+3. Для каждого режима (seq/mpi) выполняется несколько прогонов, а утилиты курса измеряют и усредняют время выполнения. В текущей реализации тесты проверяют только последовательную версию (`DoroginVContrastsRaisingSEQ`).
 
 ## 6. Экспериментальная настройка
 
@@ -177,14 +191,14 @@ mpiexec -n 4 .\ppc_perf_tests.exe --gtest_filter=*Dorogin*
 
 ### 7.1 Корректность
 
-Функциональные тесты сравнивают результат работы задач `DoroginVContrastsRaisingSEQ` и `DoroginVContrastsRaisingMPI` с эталонным результатом, рассчитанным на основе загруженного изображения `pic.jpg`.
+Функциональные тесты сравнивают результат работы задачи `DoroginVContrastsRaisingSEQ` с эталонным результатом, рассчитанным на основе тестового вектора размера 256 элементов.
 
 Критерий корректности:
 
-Входной и выходной вектора должны быть одинаковы по размеру
-Значения элементов выходного вектора совпадают с эталонными значениями
+- Входной и выходной вектора должны быть одинаковы по размеру.
+- Значения элементов выходного вектора совпадают с эталонными значениями (побайтовое равенство).
 
-Все функциональные тесты `ContrastFunctionalTests/DoroginVRunFuncTests.*` проходят успешно для последовательной и параллельной реализации при различных параметрах теста.
+Все функциональные тесты `ContrastFunctionalTests/DoroginVRunFuncTests.*` проходят успешно для последовательной реализации при различных параметрах теста (small, medium, large).
 
 ### 7.2 Производительность
 
