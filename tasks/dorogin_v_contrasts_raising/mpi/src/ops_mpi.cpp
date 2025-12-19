@@ -8,6 +8,8 @@
 #include <numeric>
 #include <vector>
 
+#include "dorogin_v_contrasts_raising/common/include/common.hpp"
+
 namespace dorogin_v_contrasts_raising {
 
 namespace {

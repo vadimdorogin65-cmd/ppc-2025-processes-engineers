@@ -4,8 +4,6 @@
 #include <cstddef>
 #include <cstdint>
 
-#include "dorogin_v_contrasts_raising/common/include/common.hpp"
-
 namespace dorogin_v_contrasts_raising {
 
 namespace {
@@ -31,7 +29,8 @@ bool DoroginVContrastsRaisingSEQ::RunImpl() {
   auto &dst = GetOutput();
 
   for (size_t i = 0; i < src.size(); ++i) {
-    const int adjusted = static_cast<int>(static_cast<float>(src[i]) * kContrastFactor);
+    const float scaled = static_cast<float>(src[i]) * kContrastFactor;
+    const int adjusted = static_cast<int>(scaled);
     dst[i] = static_cast<uint8_t>(std::clamp(adjusted, 0, 255));
   }
   return true;

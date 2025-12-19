@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
-#include <ranges>
 
 #include "dorogin_v_contrasts_raising/common/include/common.hpp"
 #include "dorogin_v_contrasts_raising/seq/include/ops_seq.hpp"

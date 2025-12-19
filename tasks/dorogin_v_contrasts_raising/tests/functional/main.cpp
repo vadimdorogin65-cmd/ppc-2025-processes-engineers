@@ -4,7 +4,6 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
-#include <ranges>
 #include <string>
 #include <tuple>
 
@@ -33,7 +32,9 @@ class DoroginVRunFuncTests : public ppc::util::BaseRunFuncTests<InType, OutType,
     constexpr float kFactor = 1.3F;
 
     std::ranges::transform(input_, expected_.begin(), [](uint8_t v) {
-      return static_cast<uint8_t>(std::clamp(static_cast<int>(static_cast<float>(v) * kFactor), 0, 255));
+      const float scaled = static_cast<float>(v) * kFactor;
+      const int adjusted = static_cast<int>(scaled);
+      return static_cast<uint8_t>(std::clamp(adjusted, 0, 255));
     });
   }
 
