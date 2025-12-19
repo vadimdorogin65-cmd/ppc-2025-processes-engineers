@@ -3,69 +3,69 @@
 #include <mpi.h>
 
 #include <algorithm>
-#include <vector>
+#include <cstddef>
+#include <cstdint>
+#include <numeric>
 
 namespace dorogin_v_contrasts_raising {
 
 namespace {
-constexpr float kContrastBoost = 1.3F;
+constexpr float kContrastFactor = 1.3F;
 }
 
 DoroginVContrastsRaisingMPI::DoroginVContrastsRaisingMPI(const InType &in) {
   SetTypeOfTask(GetStaticTypeOfTask());
   GetInput() = in;
-  GetOutput().resize(in.size());
 }
 
 bool DoroginVContrastsRaisingMPI::ValidationImpl() {
-  return true;
+  return !GetInput().empty();
 }
 
 bool DoroginVContrastsRaisingMPI::PreProcessingImpl() {
+  GetOutput().assign(GetInput().size(), 0);
   return true;
 }
 
 bool DoroginVContrastsRaisingMPI::RunImpl() {
   int rank = 0;
-  int size = 1;
+  int comm_size = 1;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  MPI_Comm_size(MPI_COMM_WORLD, &comm_size);
 
-  const size_t total_size = GetInput().size();
+  const size_t total = GetInput().size();
 
-  std::vector<int> counts(size, static_cast<int>(total_size / size));
-  for (int i = 0; i < static_cast<int>(total_size % size); ++i) {
+  std::vector<int> counts(comm_size, static_cast<int>(total / comm_size));
+  for (int i = 0; i < static_cast<int>(total % comm_size); ++i) {
     counts[i]++;
   }
 
-  std::vector<int> displs(size, 0);
-  for (int i = 1; i < size; ++i) {
-    displs[i] = displs[i - 1] + counts[i - 1];
-  }
+  std::vector<int> offsets(comm_size, 0);
+  std::partial_sum(counts.begin(), counts.end() - 1, offsets.begin() + 1);
 
-  std::vector<uint8_t> local_in(counts[rank]);
-  std::vector<uint8_t> local_out(counts[rank]);
+  std::vector<uint8_t> local_input(counts[rank]);
+  std::vector<uint8_t> local_output(counts[rank]);
 
-  const uint8_t *sendbuf = (rank == 0 && !GetInput().empty()) ? GetInput().data() : nullptr;
+  const uint8_t *sendbuf = rank == 0 ? GetInput().data() : nullptr;
 
-  MPI_Scatterv(sendbuf, counts.data(), displs.data(), MPI_UNSIGNED_CHAR, local_in.data(), counts[rank],
+  MPI_Scatterv(sendbuf, counts.data(), offsets.data(), MPI_UNSIGNED_CHAR, local_input.data(), counts[rank],
                MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
 
-  for (size_t i = 0; i < local_in.size(); ++i) {
-    const int value = static_cast<int>(local_in[i] * kContrastBoost);
-    local_out[i] = static_cast<uint8_t>(std::clamp(value, 0, 255));
+  for (size_t i = 0; i < local_input.size(); ++i) {
+    const int adjusted = static_cast<int>(static_cast<float>(local_input[i]) * kContrastFactor);
+    local_output[i] = static_cast<uint8_t>(std::clamp(adjusted, 0, 255));
   }
 
-  uint8_t *recvbuf = (rank == 0 && !GetOutput().empty()) ? GetOutput().data() : nullptr;
+  uint8_t *recvbuf = rank == 0 ? GetOutput().data() : nullptr;
 
-  MPI_Gatherv(local_out.data(), counts[rank], MPI_UNSIGNED_CHAR, recvbuf, counts.data(), displs.data(),
+  MPI_Gatherv(local_output.data(), counts[rank], MPI_UNSIGNED_CHAR, recvbuf, counts.data(), offsets.data(),
               MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
 
   return true;
 }
 
 bool DoroginVContrastsRaisingMPI::PostProcessingImpl() {
-  return true;
+  return GetOutput().size() == GetInput().size();
 }
 
 }  // namespace dorogin_v_contrasts_raising
