@@ -1,8 +1,9 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
-#include <vector>
+#include <ranges>
 
 #include "dorogin_v_contrasts_raising/common/include/common.hpp"
 #include "dorogin_v_contrasts_raising/seq/include/ops_seq.hpp"
@@ -19,8 +20,11 @@ class DoroginVRunPerfTests : public ppc::util::BaseRunPerfTests<InType, OutType>
     expected_.resize(kSize);
     constexpr float kFactor = 1.3F;
 
-    std::transform(input_.begin(), input_.end(), expected_.begin(),
-                   [](uint8_t v) { return static_cast<uint8_t>(std::clamp(static_cast<int>(v * kFactor), 0, 255)); });
+    std::ranges::transform(input_, expected_.begin(), [](uint8_t v) {
+      const float scaled = static_cast<float>(v) * kFactor;
+      const int adjusted = static_cast<int>(scaled);
+      return static_cast<uint8_t>(std::clamp(adjusted, 0, 255));
+    });
   }
 
   bool CheckTestOutputData(OutType &out) override {

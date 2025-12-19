@@ -4,11 +4,13 @@
 #include <cstddef>
 #include <cstdint>
 
+#include "dorogin_v_contrasts_raising/common/include/common.hpp"
+
 namespace dorogin_v_contrasts_raising {
 
 namespace {
 constexpr float kContrastFactor = 1.3F;
-}
+}  // namespace
 
 DoroginVContrastsRaisingSEQ::DoroginVContrastsRaisingSEQ(const InType &in) {
   SetTypeOfTask(GetStaticTypeOfTask());
