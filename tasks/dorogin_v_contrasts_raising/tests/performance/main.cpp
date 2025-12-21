@@ -14,7 +14,7 @@ namespace dorogin_v_contrasts_raising {
 
 namespace {
 constexpr float kFactor = 1.3F;
-} // namespace
+}  // namespace
 
 class DoroginVPerformanceTests : public ::testing::Test {
  protected:

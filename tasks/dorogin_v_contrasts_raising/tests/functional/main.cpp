@@ -13,7 +13,7 @@ namespace dorogin_v_contrasts_raising {
 
 namespace {
 constexpr float kFactor = 1.3F;
-} // namespace
+}  // namespace
 
 class DoroginVFunctionalTests : public ::testing::Test {
  protected:
@@ -35,7 +35,6 @@ class DoroginVFunctionalTests : public ::testing::Test {
   }
 };
 
-
 TEST_F(DoroginVFunctionalTests, SeqFullCycle) {
   DoroginVContrastsRaisingSEQ task(input);
   ASSERT_TRUE(task.Validation());
@@ -51,7 +50,6 @@ TEST_F(DoroginVFunctionalTests, SeqRunOnly) {
   ASSERT_TRUE(task.PreProcessing());
   ASSERT_TRUE(task.Run());
 }
-
 
 TEST_F(DoroginVFunctionalTests, MpiFullCycle) {
   int rank = 0;
