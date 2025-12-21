@@ -4,7 +4,6 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
-#include <vector>
 
 #include "dorogin_v_contrasts_raising/common/include/common.hpp"
 #include "dorogin_v_contrasts_raising/mpi/include/ops_mpi.hpp"
@@ -14,60 +13,58 @@ namespace dorogin_v_contrasts_raising {
 
 namespace {
 constexpr float kFactor = 1.3F;
-}
+} // namespace
 
 class DoroginVFunctionalTests : public ::testing::Test {
  protected:
-  InType input_;
-  OutType expected_;
+  InType input;
+  OutType expected;
 
   void SetUp() override {
     constexpr size_t kSize = 512;
-    input_.resize(kSize);
+    input.resize(kSize);
     for (size_t i = 0; i < kSize; ++i) {
-      input_[i] = static_cast<uint8_t>(i % 256);
+      input[i] = static_cast<uint8_t>(i % 256);
     }
 
-    expected_.resize(kSize);
+    expected.resize(kSize);
     for (size_t i = 0; i < kSize; ++i) {
-      const int v = static_cast<int>(static_cast<float>(input_[i]) * kFactor);
-      expected_[i] = static_cast<uint8_t>(std::clamp(v, 0, 255));
+      const int v = static_cast<int>(static_cast<float>(input[i]) * kFactor);
+      expected[i] = static_cast<uint8_t>(std::clamp(v, 0, 255));
     }
   }
 };
 
-// ---------------- SEQ ----------------
 
 TEST_F(DoroginVFunctionalTests, SeqFullCycle) {
-  DoroginVContrastsRaisingSEQ task(input_);
+  DoroginVContrastsRaisingSEQ task(input);
   ASSERT_TRUE(task.Validation());
   ASSERT_TRUE(task.PreProcessing());
   ASSERT_TRUE(task.Run());
   ASSERT_TRUE(task.PostProcessing());
-  EXPECT_EQ(task.GetOutput(), expected_);
+  EXPECT_EQ(task.GetOutput(), expected);
 }
 
 TEST_F(DoroginVFunctionalTests, SeqRunOnly) {
-  DoroginVContrastsRaisingSEQ task(input_);
+  DoroginVContrastsRaisingSEQ task(input);
   ASSERT_TRUE(task.Validation());
   ASSERT_TRUE(task.PreProcessing());
   ASSERT_TRUE(task.Run());
 }
 
-// ---------------- MPI ----------------
 
 TEST_F(DoroginVFunctionalTests, MpiFullCycle) {
   int rank = 0;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-  DoroginVContrastsRaisingMPI task(input_);
+  DoroginVContrastsRaisingMPI task(input);
   ASSERT_TRUE(task.Validation());
   ASSERT_TRUE(task.PreProcessing());
   ASSERT_TRUE(task.Run());
   ASSERT_TRUE(task.PostProcessing());
 
   if (rank == 0) {
-    EXPECT_EQ(task.GetOutput(), expected_);
+    EXPECT_EQ(task.GetOutput(), expected);
   }
 }
 
@@ -75,17 +72,15 @@ TEST_F(DoroginVFunctionalTests, MpiRunOnly) {
   int rank = 0;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-  DoroginVContrastsRaisingMPI task(input_);
+  DoroginVContrastsRaisingMPI task(input);
   ASSERT_TRUE(task.Validation());
   ASSERT_TRUE(task.PreProcessing());
   ASSERT_TRUE(task.Run());
 
   if (rank == 0) {
-    EXPECT_EQ(task.GetOutput(), expected_);
+    EXPECT_EQ(task.GetOutput(), expected);
   }
 }
-
-// ---------------- EDGE CASES ----------------
 
 TEST(DoroginVEdgeCases, SeqEmptyInput) {
   InType empty;
@@ -108,7 +103,7 @@ TEST(DoroginVEdgeCases, MpiUnevenSize) {
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-  InType data(static_cast<size_t>(size * 3 + 1), 100);
+  InType data(static_cast<size_t>((size * 3) + 1), 100);
   DoroginVContrastsRaisingMPI task(data);
 
   ASSERT_TRUE(task.Validation());

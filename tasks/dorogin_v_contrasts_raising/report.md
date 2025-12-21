@@ -112,22 +112,22 @@ MPI_Gatherv(local_output.data(), counts[rank], MPI_UNSIGNED_CHAR,
 
 Функциональные тесты построены на базе `ppc::util::BaseRunFuncTests`.
 
-1. В методе `SetUp()` генерируется тестовый входной вектор `input_` размера 256 элементов, заполненный значениями от 0 до 255:
+1. В методе `SetUp()` генерируется тестовый входной вектор `input` размера 256 элементов, заполненный значениями от 0 до 255:
 
 ```cpp
 constexpr size_t kSize = 256;
-input_.resize(kSize);
+input.resize(kSize);
 
 for (size_t i = 0; i < kSize; ++i) {
-  input_[i] = static_cast<uint8_t>(i);
+  input[i] = static_cast<uint8_t>(i);
 }
 ```
 
-2. Эталонный результат `expected_` вычисляется по той же формуле усиления контраста с использованием `std::ranges::transform`:
+2. Эталонный результат `expected` вычисляется по той же формуле усиления контраста с использованием `std::ranges::transform`:
 
 ```cpp
 constexpr float kFactor = 1.3F;
-std::ranges::transform(input_, expected_.begin(), [](uint8_t v) {
+std::ranges::transform(input, expected.begin(), [](uint8_t v) {
   const float scaled = static_cast<float>(v) * kFactor;
   const int adjusted = static_cast<int>(scaled);
   return static_cast<uint8_t>(std::clamp(adjusted, 0, 255));
@@ -137,8 +137,8 @@ std::ranges::transform(input_, expected_.begin(), [](uint8_t v) {
 3. Метод `CheckTestOutputData` сравнивает выходной вектор с эталоном по размеру и по элементам:
 
 ```cpp
-return out.size() == expected_.size() &&
-       std::equal(out.begin(), out.end(), expected_.begin());
+return out.size() == expected.size() &&
+       std::equal(out.begin(), out.end(), expected.begin());
 ```
 
 Параметризация тестов `kParams` задаёт разные режимы запуска (small, medium, large) через настройки `PPC_SETTINGS_dorogin_v_contrasts_raising`. Тесты проверяют только последовательную реализацию (`DoroginVContrastsRaisingSEQ`).
@@ -151,13 +151,13 @@ return out.size() == expected_.size() &&
 
 ```cpp
 constexpr size_t kSize = 1'000'000;
-input_.assign(kSize, 120);
+input.assign(kSize, 120);
 ```
 
-2. Эталон `expected_` вычисляется по той же формуле повышения контраста с коэффициентом `kFactor = 1.3F`:
+2. Эталон `expected` вычисляется по той же формуле повышения контраста с коэффициентом `kFactor = 1.3F`:
 
 ```cpp
-std::ranges::transform(input_, expected_.begin(), [](uint8_t v) {
+std::ranges::transform(input, expected.begin(), [](uint8_t v) {
   const float scaled = static_cast<float>(v) * kFactor;
   const int adjusted = static_cast<int>(scaled);
   return static_cast<uint8_t>(std::clamp(adjusted, 0, 255));
