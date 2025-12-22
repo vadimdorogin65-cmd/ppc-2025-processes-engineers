@@ -1,5 +1,6 @@
 #include "dorogin_v_radix_sort_doubles/seq/include/ops_seq.hpp"
 
+#include <algorithm>
 #include <cstdint>
 #include <cstring>
 #include <vector>
@@ -21,12 +22,12 @@ double FromSortable(uint64_t u) {
   return x;
 }
 
-void RadixSort(std::vector<double>* vec) {
-  const std::size_t n = vec->size();
+void RadixSort(std::vector<double>& vec) {
+  const std::size_t n = vec.size();
   std::vector<uint64_t> a(n), tmp(n);
 
   for (std::size_t i = 0; i < n; ++i)
-    a[i] = ToSortable((*vec)[i]);
+    a[i] = ToSortable(vec[i]);
 
   for (int byte = 0; byte < 8; ++byte) {
     std::size_t count[256]{};
@@ -45,7 +46,7 @@ void RadixSort(std::vector<double>* vec) {
   }
 
   for (std::size_t i = 0; i < n; ++i)
-    (*vec)[i] = FromSortable(a[i]);
+    vec[i] = FromSortable(a[i]);
 }
 
 }  // namespace
@@ -60,17 +61,17 @@ bool DoroginVRadixSortDoublesSEQ::ValidationImpl() {
 }
 
 bool DoroginVRadixSortDoublesSEQ::PreProcessingImpl() {
-  data = GetInput();
+  data_ = GetInput();
   return true;
 }
 
 bool DoroginVRadixSortDoublesSEQ::RunImpl() {
-  RadixSort(&data);
+  RadixSort(data_);
   return true;
 }
 
 bool DoroginVRadixSortDoublesSEQ::PostProcessingImpl() {
-  GetOutput() = data;
+  GetOutput() = data_;
   return true;
 }
 

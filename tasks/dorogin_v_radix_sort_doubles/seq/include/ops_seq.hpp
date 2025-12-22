@@ -18,7 +18,7 @@ class DoroginVRadixSortDoublesSEQ : public BaseTask {
   bool RunImpl() override;
   bool PostProcessingImpl() override;
 
-  InType data;
+  InType data_;
 };
 
 }  // namespace dorogin_v_radix_sort_doubles
