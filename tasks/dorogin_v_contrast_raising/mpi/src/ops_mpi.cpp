@@ -3,8 +3,11 @@
 #include <mpi.h>
 
 #include <algorithm>
-#include <numeric>
+#include <cstddef>
+#include <cstdint>
 #include <vector>
+
+#include "dorogin_v_contrast_raising/common/include/common.hpp"
 
 namespace dorogin_v_contrast_raising {
 
@@ -38,7 +41,7 @@ bool DoroginVContrastRaisingMPI::RunImpl() {
   const std::size_t tail = total_size % world_size;
 
   for (int i = 0; i < world_size; ++i) {
-    block_sizes[i] = static_cast<int>(base + (i < static_cast<int>(tail)));
+    block_sizes[i] = static_cast<int>(base + (i < static_cast<std::size_t>(tail)));
   }
 
   for (int i = 1; i < world_size; ++i) {
@@ -51,15 +54,10 @@ bool DoroginVContrastRaisingMPI::RunImpl() {
   MPI_Scatterv(GetInput().data(), block_sizes.data(), offsets.data(), MPI_UNSIGNED_CHAR, local_input.data(),
                block_sizes[rank], MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
 
-  constexpr float factor = 1.3F;
+  constexpr float kFactor = 1.3F;
   for (std::size_t i = 0; i < local_input.size(); ++i) {
-    int scaled = static_cast<int>(local_input[i] * factor);
-    if (scaled < 0) {
-      scaled = 0;
-    }
-    if (scaled > 255) {
-      scaled = 255;
-    }
+    int scaled = static_cast<int>(static_cast<float>(local_input[i]) * kFactor);
+    scaled = std::clamp(scaled, 0, 255);
     local_output[i] = static_cast<uint8_t>(scaled);
   }
 

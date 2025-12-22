@@ -1,8 +1,7 @@
-#include <gtest/gtest.h>
 #include <mpi.h>
-#include <stb/stb_image.h>
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <vector>
 
@@ -18,15 +17,15 @@ class DoroginVContrastRaisingFuncTests : public ::testing::Test {
   OutType reference;
 
   void SetUp() override {
-    constexpr size_t size = 50'000'000;
-    input.resize(size);
-    for (size_t i = 0; i < size; ++i) {
+    constexpr size_t kSize = 50'000'000;
+    input.resize(kSize);
+    for (size_t i = 0; i < kSize; ++i) {
       input[i] = static_cast<uint8_t>(i);
     }
 
-    reference.resize(size);
-    for (size_t i = 0; i < size; ++i) {
-      int v = static_cast<int>(input[i] * 1.3F);
+    reference.resize(kSize);
+    for (size_t i = 0; i < kSize; ++i) {
+      int v = static_cast<int>(static_cast<float>(input[i]) * 1.3F);
       reference[i] = static_cast<uint8_t>(std::clamp(v, 0, 255));
     }
   }
