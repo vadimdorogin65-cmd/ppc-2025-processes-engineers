@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <utility>
 #include <vector>
 
 #include "dorogin_v_contrast_raising/common/include/common.hpp"
@@ -41,7 +42,7 @@ bool DoroginVContrastRaisingMPI::RunImpl() {
   const std::size_t tail = total_size % world_size;
 
   for (int i = 0; i < world_size; ++i) {
-    block_sizes[i] = static_cast<int>(base + (static_cast<std::size_t>(i) < tail ? 1 : 0));
+    block_sizes[i] = static_cast<int>(base + (std::cmp_less(i, tail) ? 1 : 0));
   }
 
   for (int i = 1; i < world_size; ++i) {

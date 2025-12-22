@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
-#include <vector>
 
 #include "dorogin_v_contrast_raising/common/include/common.hpp"
 #include "dorogin_v_contrast_raising/mpi/include/ops_mpi.hpp"
