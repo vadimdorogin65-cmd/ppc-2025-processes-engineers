@@ -4,7 +4,7 @@
 
 namespace dorogin_v_contrast_raising {
 
-DoroginVContrastRaisingSEQ::DoroginVContrastRaisingSEQ(const InType& in) {
+DoroginVContrastRaisingSEQ::DoroginVContrastRaisingSEQ(const InType &in) {
   SetTypeOfTask(GetStaticTypeOfTask());
   GetInput() = in;
   GetOutput().resize(in.size());
@@ -22,8 +22,8 @@ bool DoroginVContrastRaisingSEQ::PreProcessingImpl() {
 bool DoroginVContrastRaisingSEQ::RunImpl() {
   constexpr float factor = 1.3F;
 
-  const auto& src = GetInput();
-  auto& dst = GetOutput();
+  const auto &src = GetInput();
+  auto &dst = GetOutput();
 
   for (std::size_t i = 0; i < src.size(); ++i) {
     int value = static_cast<int>(src[i] * factor);

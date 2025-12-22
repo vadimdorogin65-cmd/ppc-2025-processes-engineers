@@ -20,7 +20,9 @@ class DoroginVContrastRaisingFuncTests : public ::testing::Test {
   void SetUp() override {
     constexpr size_t size = 50'000'000;
     input.resize(size);
-    for (size_t i = 0; i < size; ++i) input[i] = static_cast<uint8_t>(i);
+    for (size_t i = 0; i < size; ++i) {
+      input[i] = static_cast<uint8_t>(i);
+    }
 
     reference.resize(size);
     for (size_t i = 0; i < size; ++i) {

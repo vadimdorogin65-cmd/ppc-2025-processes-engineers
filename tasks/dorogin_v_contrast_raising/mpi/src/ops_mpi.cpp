@@ -8,7 +8,7 @@
 
 namespace dorogin_v_contrast_raising {
 
-DoroginVContrastRaisingMPI::DoroginVContrastRaisingMPI(const InType& in) {
+DoroginVContrastRaisingMPI::DoroginVContrastRaisingMPI(const InType &in) {
   SetTypeOfTask(GetStaticTypeOfTask());
   GetInput() = in;
   GetOutput().resize(in.size());
@@ -48,21 +48,23 @@ bool DoroginVContrastRaisingMPI::RunImpl() {
   std::vector<uint8_t> local_input(block_sizes[rank]);
   std::vector<uint8_t> local_output(block_sizes[rank]);
 
-  MPI_Scatterv(GetInput().data(), block_sizes.data(), offsets.data(),
-               MPI_UNSIGNED_CHAR, local_input.data(),
+  MPI_Scatterv(GetInput().data(), block_sizes.data(), offsets.data(), MPI_UNSIGNED_CHAR, local_input.data(),
                block_sizes[rank], MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
 
   constexpr float factor = 1.3F;
   for (std::size_t i = 0; i < local_input.size(); ++i) {
     int scaled = static_cast<int>(local_input[i] * factor);
-    if (scaled < 0) scaled = 0;
-    if (scaled > 255) scaled = 255;
+    if (scaled < 0) {
+      scaled = 0;
+    }
+    if (scaled > 255) {
+      scaled = 255;
+    }
     local_output[i] = static_cast<uint8_t>(scaled);
   }
 
-  MPI_Gatherv(local_output.data(), block_sizes[rank], MPI_UNSIGNED_CHAR,
-              GetOutput().data(), block_sizes.data(), offsets.data(),
-              MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
+  MPI_Gatherv(local_output.data(), block_sizes[rank], MPI_UNSIGNED_CHAR, GetOutput().data(), block_sizes.data(),
+              offsets.data(), MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
 
   return true;
 }
