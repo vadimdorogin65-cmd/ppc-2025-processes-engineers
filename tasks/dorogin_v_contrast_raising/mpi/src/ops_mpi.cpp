@@ -41,7 +41,7 @@ bool DoroginVContrastRaisingMPI::RunImpl() {
   const std::size_t tail = total_size % world_size;
 
   for (int i = 0; i < world_size; ++i) {
-    block_sizes[i] = static_cast<int>(base + (i < static_cast<std::size_t>(tail)));
+    block_sizes[i] = static_cast<int>(base + (static_cast<std::size_t>(i) < tail ? 1 : 0));
   }
 
   for (int i = 1; i < world_size; ++i) {
