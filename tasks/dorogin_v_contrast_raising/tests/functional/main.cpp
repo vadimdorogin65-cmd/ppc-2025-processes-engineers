@@ -6,13 +6,11 @@
 #include <cstdint>
 #include <string>
 #include <tuple>
-#include <vector>
 
 #include "dorogin_v_contrast_raising/common/include/common.hpp"
 #include "dorogin_v_contrast_raising/mpi/include/ops_mpi.hpp"
 #include "dorogin_v_contrast_raising/seq/include/ops_seq.hpp"
 #include "util/include/func_test_util.hpp"
-#include "util/include/util.hpp"
 
 namespace dorogin_v_contrast_raising {
 
@@ -49,8 +47,8 @@ class DoroginVRunFuncTestsContrastRaising : public ppc::util::BaseRunFuncTests<I
   }
 
  private:
-  InType input_data_{};
-  OutType reference_{};
+  InType input_data_;
+  OutType reference_;
 };
 
 namespace {

@@ -2,7 +2,6 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <vector>
 
 #include "dorogin_v_contrast_raising/common/include/common.hpp"
 #include "dorogin_v_contrast_raising/mpi/include/ops_mpi.hpp"
@@ -14,8 +13,8 @@ namespace dorogin_v_contrast_raising {
 class DoroginVRunPerfTestsContrastRaising : public ppc::util::BaseRunPerfTests<InType, OutType> {
  protected:
   void SetUp() override {
-    input_data_.resize(kSize_);
-    for (std::size_t i = 0; i < kSize_; ++i) {
+    input_data_.resize(kSize);
+    for (std::size_t i = 0; i < kSize; ++i) {
       input_data_[i] = static_cast<uint8_t>(i % 256);
     }
   }
@@ -29,8 +28,8 @@ class DoroginVRunPerfTestsContrastRaising : public ppc::util::BaseRunPerfTests<I
   }
 
  private:
-  static constexpr std::size_t kSize_ = 1'000'000;
-  InType input_data_{};
+  static constexpr std::size_t kSize = 1'000'000;
+  InType input_data_;
 };
 
 TEST_P(DoroginVRunPerfTestsContrastRaising, RunPerfModes) {
