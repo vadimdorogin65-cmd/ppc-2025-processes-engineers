@@ -63,7 +63,7 @@ bool DoroginVContrastRaisingMPI::RunImpl() {
   }
 
   if (world_size == 1) {
-    std::copy(local_output.begin(), local_output.end(), GetOutput().begin());
+    std::ranges::copy(local_output, GetOutput().begin());
   } else {
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Gatherv(local_output.data(), block_sizes[rank], MPI_UNSIGNED_CHAR, rank == 0 ? GetOutput().data() : nullptr,
