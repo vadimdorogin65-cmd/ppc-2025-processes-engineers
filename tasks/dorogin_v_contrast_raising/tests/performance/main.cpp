@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <mpi.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -20,6 +21,17 @@ class DoroginVRunPerfTestsContrastRaising : public ppc::util::BaseRunPerfTests<I
   }
 
   bool CheckTestOutputData(OutType &output_data) final {
+    int initialized = 0;
+    MPI_Initialized(&initialized);
+
+    if (initialized != 0) {
+      int rank = 0;
+      MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+      if (rank != 0) {
+        return true;
+      }
+    }
+
     return !output_data.empty() && output_data.size() == input_data_.size();
   }
 

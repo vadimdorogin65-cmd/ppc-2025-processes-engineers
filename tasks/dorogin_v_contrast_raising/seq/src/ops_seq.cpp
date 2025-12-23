@@ -31,7 +31,7 @@ bool DoroginVContrastRaisingSEQ::RunImpl() {
 
   for (std::size_t i = 0; i < src.size(); ++i) {
     int value = static_cast<int>(static_cast<float>(src[i]) * kFactor);
-    value = std::max(0, std::min(255, value));
+    value = std::clamp(value, 0, 255);
     dst[i] = static_cast<uint8_t>(value);
   }
 

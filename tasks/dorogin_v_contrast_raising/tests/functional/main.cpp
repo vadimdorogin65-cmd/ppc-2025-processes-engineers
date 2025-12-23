@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <mpi.h>
 
 #include <algorithm>
 #include <array>
@@ -39,6 +40,17 @@ class DoroginVRunFuncTestsContrastRaising : public ppc::util::BaseRunFuncTests<I
   }
 
   bool CheckTestOutputData(OutType &output_data) final {
+    int initialized = 0;
+    MPI_Initialized(&initialized);
+
+    if (initialized != 0) {
+      int rank = 0;
+      MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+      if (rank != 0) {
+        return true;
+      }
+    }
+
     return output_data == reference_;
   }
 

@@ -52,8 +52,8 @@ bool DoroginVContrastRaisingMPI::RunImpl() {
   std::vector<uint8_t> local_input(block_sizes[rank]);
   std::vector<uint8_t> local_output(block_sizes[rank]);
 
-  MPI_Scatterv(GetInput().data(), block_sizes.data(), offsets.data(), MPI_UNSIGNED_CHAR, local_input.data(),
-               block_sizes[rank], MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
+  MPI_Scatterv(rank == 0 ? GetInput().data() : nullptr, block_sizes.data(), offsets.data(), MPI_UNSIGNED_CHAR,
+               local_input.data(), block_sizes[rank], MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
 
   constexpr float kFactor = 1.3F;
   for (std::size_t i = 0; i < local_input.size(); ++i) {
@@ -62,14 +62,24 @@ bool DoroginVContrastRaisingMPI::RunImpl() {
     local_output[i] = static_cast<uint8_t>(scaled);
   }
 
-  MPI_Gatherv(local_output.data(), block_sizes[rank], MPI_UNSIGNED_CHAR, GetOutput().data(), block_sizes.data(),
-              offsets.data(), MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
+  if (world_size == 1) {
+    std::copy(local_output.begin(), local_output.end(), GetOutput().begin());
+  } else {
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Gatherv(local_output.data(), block_sizes[rank], MPI_UNSIGNED_CHAR, rank == 0 ? GetOutput().data() : nullptr,
+                block_sizes.data(), offsets.data(), MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
+  }
 
   return true;
 }
 
 bool DoroginVContrastRaisingMPI::PostProcessingImpl() {
-  return !GetOutput().empty();
+  int rank = 0;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  if (rank == 0) {
+    return !GetOutput().empty();
+  }
+  return true;
 }
 
 }  // namespace dorogin_v_contrast_raising

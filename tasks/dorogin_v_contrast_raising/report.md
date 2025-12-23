@@ -51,15 +51,26 @@ for (std::size_t i = 0; i < input.size(); ++i) {
 
 Принцип работы:
 
-Входной массив делится на блоки по числу процессов. Каждый процесс обрабатывает определенную свою часть массива. Функции MPI_Scatterv и MPI_Gatherv используются для распределения и сбора данных. И rank 0 собирает весь массив после обработки.
+Входной массив делится на блоки по числу процессов. Каждый процесс обрабатывает определенную свою часть массива. Функции MPI_Scatterv и MPI_Gatherv используются для распределения и сбора данных. Rank 0 собирает весь массив после обработки.
+
+Особенности реализации:
+- При одном процессе (world_size == 1) результат копируется напрямую без использования MPI операций
+- При нескольких процессах используется MPI_Scatterv для распределения данных и MPI_Gatherv для сбора результатов на rank 0
+- Перед MPI_Gatherv выполняется MPI_Barrier для синхронизации всех процессов
+- На rank != 0 указатели на входные и выходные буферы передаются как nullptr в соответствии с требованиями MPI
+- PostProcessingImpl проверяет результат только на rank 0, так как на остальных процессах GetOutput() может быть пустым
 
 Псевдокод:
 
-scatter input -> local_block
-for each element in local_block:
-    value = static_cast<int>(static_cast<float>(element) * kFactor)
-    clamp value to [0, 255]
-gather local_block -> output
+if world_size == 1:
+    copy input -> output (direct processing)
+else:
+    scatter input -> local_block (only rank 0 provides input data)
+    for each element in local_block:
+        value = static_cast<int>(static_cast<float>(element) * kFactor)
+        clamp value to [0, 255]
+    barrier synchronization
+    gather local_block -> output (only rank 0 receives result)
 
 Каждый процесс работает параллельно над своей частью массива
 
@@ -149,14 +160,29 @@ C++ Reference: std::clamp: https://en.cppreference.com/w/cpp/algorithm/clamp
 
 Пример MPI-обработки блока:
 
+int rank = 0;
+int world_size = 1;
+MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+
+// ... вычисление block_sizes и offsets ...
+
 constexpr float kFactor = 1.3F;
-MPI_Scatterv(input.data(), counts.data(), displs.data(), MPI_UNSIGNED_CHAR,
-             local_in.data(), counts[rank], MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
+MPI_Scatterv(rank == 0 ? input.data() : nullptr, block_sizes.data(), offsets.data(), 
+             MPI_UNSIGNED_CHAR, local_in.data(), block_sizes[rank], MPI_UNSIGNED_CHAR, 
+             0, MPI_COMM_WORLD);
 
 for (std::size_t i = 0; i < local_in.size(); ++i) {
-    int value = static_cast<int>(static_cast<float>(local_in[i]) * kFactor);
-    local_out[i] = static_cast<uint8_t>(std::clamp(value, 0, 255));
+    int scaled = static_cast<int>(static_cast<float>(local_in[i]) * kFactor);
+    scaled = std::clamp(scaled, 0, 255);
+    local_out[i] = static_cast<uint8_t>(scaled);
 }
 
-MPI_Gatherv(local_out.data(), counts[rank], MPI_UNSIGNED_CHAR,
-            output.data(), counts.data(), displs.data(), MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
+if (world_size == 1) {
+    std::copy(local_out.begin(), local_out.end(), output.begin());
+} else {
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Gatherv(local_out.data(), block_sizes[rank], MPI_UNSIGNED_CHAR,
+                rank == 0 ? output.data() : nullptr, block_sizes.data(), offsets.data(), 
+                MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
+}
