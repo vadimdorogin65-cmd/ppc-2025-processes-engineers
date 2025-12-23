@@ -25,7 +25,7 @@ bool DoroginVMinVectorValueMPI::PreProcessingImpl() {
 }
 
 bool DoroginVMinVectorValueMPI::RunImpl() {
-  int rank = 0;
+int rank = 0;
   int size = 0;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -39,9 +39,11 @@ bool DoroginVMinVectorValueMPI::RunImpl() {
 
   std::vector<int> local_data(local_size);
   if (rank == 0) {
+    // Rank 0 keeps its chunk
     for (int i = 0; i < local_size; ++i) {
       local_data[i] = data[i];
     }
+
     int offset = local_size;
     for (int dest = 1; dest < size; ++dest) {
       const int dest_size = chunk_size + (dest < remainder ? 1 : 0);
@@ -49,6 +51,7 @@ bool DoroginVMinVectorValueMPI::RunImpl() {
       offset += dest_size;
     }
   } else {
+
     MPI_Recv(local_data.data(), local_size, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
   }
 
