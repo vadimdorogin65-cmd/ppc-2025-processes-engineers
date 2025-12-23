@@ -1,72 +1,49 @@
-#include <mpi.h>
+#include <gtest/gtest.h>
 
-#include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <vector>
 
 #include "dorogin_v_contrast_raising/common/include/common.hpp"
 #include "dorogin_v_contrast_raising/mpi/include/ops_mpi.hpp"
 #include "dorogin_v_contrast_raising/seq/include/ops_seq.hpp"
+#include "util/include/perf_test_util.hpp"
 
 namespace dorogin_v_contrast_raising {
 
-class DoroginVContrastRaisingPerfTests : public ::testing::Test {
+class DoroginVRunPerfTestsContrastRaising : public ppc::util::BaseRunPerfTests<InType, OutType> {
  protected:
-  InType input;
-  OutType reference;
-
   void SetUp() override {
-    constexpr size_t kSize = 50'000'000;
-    input.resize(kSize);
-    for (size_t i = 0; i < kSize; ++i) {
-      input[i] = static_cast<uint8_t>(i);
-    }
-
-    reference.resize(kSize);
-    for (size_t i = 0; i < kSize; ++i) {
-      int v = static_cast<int>(static_cast<float>(input[i]) * 1.3F);
-      reference[i] = static_cast<uint8_t>(std::clamp(v, 0, 255));
+    input_data_.resize(kSize_);
+    for (std::size_t i = 0; i < kSize_; ++i) {
+      input_data_[i] = static_cast<uint8_t>(i % 256);
     }
   }
+
+  bool CheckTestOutputData(OutType &output_data) final {
+    return !output_data.empty() && output_data.size() == input_data_.size();
+  }
+
+  InType GetTestInputData() final {
+    return input_data_;
+  }
+
+ private:
+  static constexpr std::size_t kSize_ = 1'000'000;
+  InType input_data_{};
 };
 
-TEST_F(DoroginVContrastRaisingPerfTests, SeqPipeline) {
-  DoroginVContrastRaisingSEQ task(input);
-  ASSERT_TRUE(task.Validation());
-  ASSERT_TRUE(task.PreProcessing());
-  ASSERT_TRUE(task.Run());
-  ASSERT_TRUE(task.PostProcessing());
-  EXPECT_EQ(task.GetOutput(), reference);
+TEST_P(DoroginVRunPerfTestsContrastRaising, RunPerfModes) {
+  ExecuteTest(GetParam());
 }
 
-TEST_F(DoroginVContrastRaisingPerfTests, MpiPipeline) {
-  int rank = 0;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+const auto kAllPerfTasks = ppc::util::MakeAllPerfTasks<InType, DoroginVContrastRaisingMPI, DoroginVContrastRaisingSEQ>(
+    PPC_SETTINGS_dorogin_v_contrast_raising);
 
-  DoroginVContrastRaisingMPI task(input);
-  ASSERT_TRUE(task.Validation());
-  ASSERT_TRUE(task.PreProcessing());
-  ASSERT_TRUE(task.Run());
-  ASSERT_TRUE(task.PostProcessing());
+const auto kGtestValues = ppc::util::TupleToGTestValues(kAllPerfTasks);
 
-  if (rank == 0) {
-    EXPECT_EQ(task.GetOutput(), reference);
-  }
-}
+const auto kPerfTestName = DoroginVRunPerfTestsContrastRaising::CustomPerfTestName;
 
-TEST(IncreaseContrastEdge, EmptyInputSeq) {
-  InType empty;
-  DoroginVContrastRaisingSEQ task(empty);
-  EXPECT_FALSE(task.Validation());
-}
-
-TEST(IncreaseContrastEdge, EmptyInputMpi) {
-  int rank = 0;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
-  InType empty;
-  DoroginVContrastRaisingMPI task(empty);
-  EXPECT_FALSE(task.Validation());
-}
+INSTANTIATE_TEST_SUITE_P(ContrastRaisingPerf, DoroginVRunPerfTestsContrastRaising, kGtestValues, kPerfTestName);
 
 }  // namespace dorogin_v_contrast_raising

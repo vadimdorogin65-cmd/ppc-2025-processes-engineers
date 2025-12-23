@@ -1,72 +1,76 @@
-#include <mpi.h>
+#include <gtest/gtest.h>
 
 #include <algorithm>
+#include <array>
 #include <cstddef>
 #include <cstdint>
+#include <string>
+#include <tuple>
+#include <vector>
 
 #include "dorogin_v_contrast_raising/common/include/common.hpp"
 #include "dorogin_v_contrast_raising/mpi/include/ops_mpi.hpp"
 #include "dorogin_v_contrast_raising/seq/include/ops_seq.hpp"
+#include "util/include/func_test_util.hpp"
+#include "util/include/util.hpp"
 
 namespace dorogin_v_contrast_raising {
 
-class DoroginVContrastRaisingFuncTests : public ::testing::Test {
- protected:
-  InType input;
-  OutType reference;
+class DoroginVRunFuncTestsContrastRaising : public ppc::util::BaseRunFuncTests<InType, OutType, TestType> {
+ public:
+  static std::string PrintTestParam(const TestType &test_param) {
+    return std::get<0>(test_param);
+  }
 
+ protected:
   void SetUp() override {
-    constexpr size_t kSize = 50'000'000;
-    input.resize(kSize);
-    for (size_t i = 0; i < kSize; ++i) {
-      input[i] = static_cast<uint8_t>(i);
+    constexpr std::size_t kSize = 1'000'000;
+    input_data_.resize(kSize);
+    reference_.resize(kSize);
+
+    for (std::size_t i = 0; i < kSize; ++i) {
+      input_data_[i] = static_cast<uint8_t>(i % 256);
     }
 
-    reference.resize(kSize);
-    for (size_t i = 0; i < kSize; ++i) {
-      int v = static_cast<int>(static_cast<float>(input[i]) * 1.3F);
-      reference[i] = static_cast<uint8_t>(std::clamp(v, 0, 255));
+    constexpr float kFactor = 1.3F;
+    for (std::size_t i = 0; i < kSize; ++i) {
+      int v = static_cast<int>(static_cast<float>(input_data_[i]) * kFactor);
+      v = std::clamp(v, 0, 255);
+      reference_[i] = static_cast<uint8_t>(v);
     }
   }
+
+  bool CheckTestOutputData(OutType &output_data) final {
+    return output_data == reference_;
+  }
+
+  InType GetTestInputData() final {
+    return input_data_;
+  }
+
+ private:
+  InType input_data_{};
+  OutType reference_{};
 };
 
-TEST_F(DoroginVContrastRaisingFuncTests, SeqPipeline) {
-  DoroginVContrastRaisingSEQ task(input);
-  ASSERT_TRUE(task.Validation());
-  ASSERT_TRUE(task.PreProcessing());
-  ASSERT_TRUE(task.Run());
-  ASSERT_TRUE(task.PostProcessing());
-  EXPECT_EQ(task.GetOutput(), reference);
+namespace {
+
+TEST_P(DoroginVRunFuncTestsContrastRaising, IncreaseContrast) {
+  ExecuteTest(GetParam());
 }
 
-TEST_F(DoroginVContrastRaisingFuncTests, MpiPipeline) {
-  int rank = 0;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+const std::array<TestType, 1> kTestParams = {std::make_tuple(std::string("default"))};
 
-  DoroginVContrastRaisingMPI task(input);
-  ASSERT_TRUE(task.Validation());
-  ASSERT_TRUE(task.PreProcessing());
-  ASSERT_TRUE(task.Run());
-  ASSERT_TRUE(task.PostProcessing());
+const auto kTasks = std::tuple_cat(
+    ppc::util::AddFuncTask<DoroginVContrastRaisingMPI, InType>(kTestParams, PPC_SETTINGS_dorogin_v_contrast_raising),
+    ppc::util::AddFuncTask<DoroginVContrastRaisingSEQ, InType>(kTestParams, PPC_SETTINGS_dorogin_v_contrast_raising));
 
-  if (rank == 0) {
-    EXPECT_EQ(task.GetOutput(), reference);
-  }
-}
+const auto kGtestValues = ppc::util::ExpandToValues(kTasks);
 
-TEST(IncreaseContrastEdge, EmptyInputSeq) {
-  InType empty;
-  DoroginVContrastRaisingSEQ task(empty);
-  EXPECT_FALSE(task.Validation());
-}
+const auto kFuncTestName = DoroginVRunFuncTestsContrastRaising::PrintFuncTestName<DoroginVRunFuncTestsContrastRaising>;
 
-TEST(IncreaseContrastEdge, EmptyInputMpi) {
-  int rank = 0;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+INSTANTIATE_TEST_SUITE_P(ContrastRaisingFunc, DoroginVRunFuncTestsContrastRaising, kGtestValues, kFuncTestName);
 
-  InType empty;
-  DoroginVContrastRaisingMPI task(empty);
-  EXPECT_FALSE(task.Validation());
-}
+}  // namespace
 
 }  // namespace dorogin_v_contrast_raising
