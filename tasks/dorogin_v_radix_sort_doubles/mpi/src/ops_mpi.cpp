@@ -78,16 +78,30 @@ bool DoroginVRadixSortDoublesMPI::RunImpl() {
               0,
               MPI_COMM_WORLD);
 
+  // После Gatherv только процесс 0 имеет полный вектор.
+  // Выполняем последовательное слияние на процессе 0,
+  // затем рассылаем итоговый отсортированный вектор всем процессам,
+  // чтобы CheckTestOutputData в perf-тестах проходил на каждом ранге.
+  std::vector<double> result;
   if (rank == 0) {
-    // простое последовательное слияние
     for (int i = 1; i < size; ++i) {
-      std::inplace_merge(
-          gathered.begin(),
-          gathered.begin() + displs[i],
-          gathered.begin() + displs[i] + counts[i]);
+      std::inplace_merge(gathered.begin(),
+                         gathered.begin() + displs[i],
+                         gathered.begin() + displs[i] + counts[i]);
     }
-    GetOutput() = gathered;
+    result = gathered;
   }
+
+  int global_n = n;
+  MPI_Bcast(&global_n, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+  if (rank != 0) {
+    result.resize(static_cast<std::size_t>(global_n));
+  }
+
+  MPI_Bcast(result.data(), global_n, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+  GetOutput() = result;
 
   return true;
 }

@@ -1,6 +1,8 @@
+// MPI task header: follows the common course pattern
 #pragma once
 
 #include "dorogin_v_radix_sort_doubles/common/include/common.hpp"
+#include "task/include/task.hpp"
 
 namespace dorogin_v_radix_sort_doubles {
 
