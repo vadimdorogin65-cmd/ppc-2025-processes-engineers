@@ -7,11 +7,11 @@
 
 #include "task/include/task.hpp"
 
-namespace dorogin_v_contrast_raising {
+namespace dorogin_v_contrast_enhancement {
 
 using InType = std::vector<uint8_t>;
 using OutType = std::vector<uint8_t>;
-using TestType = std::tuple<std::string>;
+using TestType = std::tuple<int, std::string>;
 using BaseTask = ppc::task::Task<InType, OutType>;
 
-}  // namespace dorogin_v_contrast_raising
+}  // namespace dorogin_v_contrast_enhancement
